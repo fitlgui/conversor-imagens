@@ -1,0 +1,26 @@
+{
+  "name": "Praxis Converter",
+  "short_name": "Converter",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0acf8f",
+  "description": "Converta imagens PNG/JPG para WebP e SVG localmente no navegador.",
+  "icons": [
+    {
+      "src": "/src/assets/logo-praxis-web.webp",
+      "sizes": "192x192",
+      "type": "image/webp"
+    },
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

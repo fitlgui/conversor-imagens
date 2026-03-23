@@ -1,0 +1,7 @@
+# robots.txt for Praxis Converter
+# Allow all crawlers (change if needed)
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://converter-imagens.praxisplatform.com.br/sitemap.xml

@@ -245,7 +245,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans p-6 md:p-12">
-      <div className="max-w-4xl mx-auto space-y-8">
+      <main className="max-w-4xl mx-auto space-y-8">
         {/* Header */}
         <header className="text-center space-y-2">
           <h1 className="text-4xl font-extrabold tracking-tight text-slate-900">
@@ -460,7 +460,7 @@ export default function App() {
             </a>
           </p>
         </footer>
-      </div>
+      </main>
     </div>
   );
 }
