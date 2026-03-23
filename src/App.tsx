@@ -10,9 +10,33 @@ import {
   Trash2,
 } from 'lucide-react';
 
-// Função utilitária para carregar scripts externos dinamicamente (necessário para o ImageTracer)
-const loadScript = (src) => {
-  return new Promise((resolve, reject) => {
+// Declaração global para reconhecer a biblioteca carregada via CDN no objeto window
+declare global {
+  interface Window {
+    ImageTracer: any;
+  }
+}
+
+// Interfaces de Tipagem
+interface ProcessedFile {
+  name?: string;
+  url?: string;
+  originalName: string;
+  size?: number;
+  status: 'success' | 'error';
+  error?: string;
+}
+
+interface ConversionResult {
+  name: string;
+  url: string;
+  originalName: string;
+  size: number;
+}
+
+// Função utilitária para carregar scripts externos dinamicamente
+const loadScript = (src: string): Promise<void> => {
+  return new Promise<void>((resolve, reject) => {
     if (document.querySelector(`script[src="${src}"]`)) {
       resolve();
       return;
@@ -27,16 +51,17 @@ const loadScript = (src) => {
 };
 
 export default function App() {
-  const [isDragging, setIsDragging] = useState(false);
-  const [files, setFiles] = useState([]);
-  const [targetFormat, setTargetFormat] = useState('webp');
-  const [quality, setQuality] = useState(0.8); // Qualidade para WebP
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [processedFiles, setProcessedFiles] = useState([]);
-  const [tracerLoaded, setTracerLoaded] = useState(false);
-  const fileInputRef = useRef(null);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [files, setFiles] = useState<File[]>([]);
+  const [targetFormat, setTargetFormat] = useState<string>('webp');
+  const [quality, setQuality] = useState<number>(0.8);
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [processedFiles, setProcessedFiles] = useState<ProcessedFile[]>([]);
+  const [tracerLoaded, setTracerLoaded] = useState<boolean>(false);
 
-  // Carregar o ImageTracerJS quando o componente for montado
+  // Tipagem correta para a referência do input de ficheiro
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     loadScript(
       'https://cdn.jsdelivr.net/npm/imagetracerjs@1.2.6/imagetracer_v1.2.6.js',
@@ -45,17 +70,17 @@ export default function App() {
       .catch((err) => console.error('Erro ao carregar ImageTracer:', err));
   }, []);
 
-  const handleDragOver = (e) => {
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragging(true);
   };
 
-  const handleDragLeave = (e) => {
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragging(false);
   };
 
-  const handleDrop = (e) => {
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragging(false);
 
@@ -64,23 +89,22 @@ export default function App() {
     }
   };
 
-  const handleFileInput = (e) => {
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       addFiles(Array.from(e.target.files));
     }
   };
 
-  const addFiles = (newFiles) => {
+  const addFiles = (newFiles: File[]) => {
     const validFiles = newFiles.filter((file) => file.type.match('image.*'));
     setFiles((prev) => [...prev, ...validFiles]);
   };
 
-  const removeFile = (index) => {
+  const removeFile = (index: number) => {
     setFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // Lógica de Conversão para WebP
-  const convertToWebP = (file) => {
+  const convertToWebP = (file: File): Promise<ConversionResult> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (event) => {
@@ -90,9 +114,14 @@ export default function App() {
           canvas.width = img.width;
           canvas.height = img.height;
           const ctx = canvas.getContext('2d');
+
+          if (!ctx) {
+            reject(new Error('Falha ao obter contexto 2D do Canvas.'));
+            return;
+          }
+
           ctx.drawImage(img, 0, 0);
 
-          // Utilizar toBlob para conseguir o tamanho exato do ficheiro gerado
           canvas.toBlob(
             (blob) => {
               if (!blob) {
@@ -104,24 +133,29 @@ export default function App() {
                 name: file.name.replace(/\.[^/.]+$/, '') + '.webp',
                 url: url,
                 originalName: file.name,
-                size: blob.size, // Salvamos o tamanho real aqui
+                size: blob.size,
               });
             },
             'image/webp',
-            parseFloat(quality),
+            quality,
           );
         };
         img.onerror = () =>
           reject(new Error('Erro ao carregar a imagem no Canvas.'));
-        img.src = event.target.result;
+
+        // Assegurar que o result é do tipo string (DataURL)
+        if (typeof event.target?.result === 'string') {
+          img.src = event.target.result;
+        } else {
+          reject(new Error('Formato de leitura de ficheiro inválido.'));
+        }
       };
       reader.onerror = () => reject(new Error('Erro ao ler o ficheiro.'));
       reader.readAsDataURL(file);
     });
   };
 
-  // Lógica de Conversão para SVG (Vetorização)
-  const convertToSVG = (file) => {
+  const convertToSVG = (file: File): Promise<ConversionResult> => {
     return new Promise((resolve, reject) => {
       if (!window.ImageTracer) {
         reject(new Error('A biblioteca de vetorização não está carregada.'));
@@ -130,7 +164,6 @@ export default function App() {
 
       const reader = new FileReader();
       reader.onload = (event) => {
-        // Reduzimos a complexidade padrão para não bloquear o browser em imagens grandes
         const options = {
           ltres: 1,
           qtres: 1,
@@ -141,20 +174,26 @@ export default function App() {
           colorquantcycles: 3,
         };
 
-        window.ImageTracer.imageToSVG(
-          event.target.result,
-          (svgString) => {
-            const blob = new Blob([svgString], { type: 'image/svg+xml' });
-            const url = URL.createObjectURL(blob);
-            resolve({
-              name: file.name.replace(/\.[^/.]+$/, '') + '.svg',
-              url: url,
-              originalName: file.name,
-              size: blob.size, // Salvamos o tamanho real aqui
-            });
-          },
-          options,
-        );
+        if (typeof event.target?.result === 'string') {
+          window.ImageTracer.imageToSVG(
+            event.target.result,
+            (svgString: string) => {
+              const blob = new Blob([svgString], { type: 'image/svg+xml' });
+              const url = URL.createObjectURL(blob);
+              resolve({
+                name: file.name.replace(/\.[^/.]+$/, '') + '.svg',
+                url: url,
+                originalName: file.name,
+                size: blob.size,
+              });
+            },
+            options,
+          );
+        } else {
+          reject(
+            new Error('Formato de leitura de ficheiro inválido para SVG.'),
+          );
+        }
       };
       reader.onerror = () =>
         reject(new Error('Erro ao ler o ficheiro para vetorização.'));
@@ -166,14 +205,14 @@ export default function App() {
     if (files.length === 0) return;
 
     setIsProcessing(true);
-    setProcessedFiles([]); // Limpa o histórico de conversões anteriores antes de começar
+    setProcessedFiles([]);
 
-    const results = [];
+    const results: ProcessedFile[] = [];
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       try {
-        let result;
+        let result: ConversionResult | undefined;
         if (targetFormat === 'webp') {
           result = await convertToWebP(file);
         } else if (targetFormat === 'svg') {
@@ -183,18 +222,20 @@ export default function App() {
         if (result) {
           results.push({ ...result, status: 'success' });
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error(`Erro a processar ${file.name}:`, error);
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
         results.push({
           originalName: file.name,
           status: 'error',
-          error: error.message,
+          error: errorMessage,
         });
       }
     }
 
-    setProcessedFiles(results); // Define apenas os resultados da conversão atual
-    setFiles([]); // Limpa a fila de entrada após o processamento
+    setProcessedFiles(results);
+    setFiles([]);
     setIsProcessing(false);
   };
 
@@ -399,6 +440,26 @@ export default function App() {
             </div>
           </div>
         )}
+
+        {/* Footer com Créditos */}
+        <footer className="pt-12 pb-4 text-center text-slate-400 text-sm">
+          <p>
+            Uma ferramenta{' '}
+            <span className="font-semibold text-slate-600">
+              Praxis Platform
+            </span>
+          </p>
+          <p className="mt-1 text-xs">
+            Desenvolvido por{' '}
+            <a
+              href="https://www.linkedin.com/in/guilhermefitl"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-slate-500 hover:text-blue-600 underline underline-offset-2 transition-colors">
+              fitlgui
+            </a>
+          </p>
+        </footer>
       </div>
     </div>
   );
