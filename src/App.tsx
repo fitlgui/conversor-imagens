@@ -249,7 +249,7 @@ export default function App() {
         {/* Header */}
         <header className="text-center space-y-2">
           <h1 className="text-4xl font-extrabold tracking-tight text-slate-900">
-            GuiGui <span className="text-blue-600">Converters</span>
+            Praxis <span className="text-[#0acf8f]">Converter</span>
           </h1>
           <p className="text-slate-500 text-lg">
             Converta as suas imagens PNG e JPG para WebP ou SVG (Vetor) de forma
