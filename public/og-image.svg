@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <style>
+      .bg{fill:#0acf8f}
+      .title{font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; font-weight:700; font-size:56px; fill:#ffffff}
+      .subtitle{font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; font-weight:500; font-size:28px; fill:#ffffff}
+    </style>
+  </defs>
+  <rect class="bg" width="1200" height="630" rx="24"/>
+  <!-- Logo image (uses the project's favicon/logo) -->
+  <image href="/src/assets/logo-praxis-web.webp" x="60" y="80" width="160" height="160" preserveAspectRatio="xMidYMid meet" />
+  <text x="240" y="160" class="title">Praxis Converter</text>
+  <text x="240" y="210" class="subtitle">Converta PNG/JPG para WebP ou SVG — grátis</text>
+  <text x="240" y="260" class="subtitle">Processamento 100% local no seu navegador</text>
+</svg>
